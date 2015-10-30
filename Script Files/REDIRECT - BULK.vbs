@@ -1,9 +1,12 @@
-'GATHERING STATS----------------------------------------------------------------------------------------------------
-name_of_script = "NAV - LOG INTO PRISM TRAINING REGION.vbs"
-start_time = timer
+'LOADING GLOBAL VARIABLES--------------------------------------------------------------------
+Set run_another_script_fso = CreateObject("Scripting.FileSystemObject")
+Set fso_command = run_another_script_fso.OpenTextFile("C:\PRISM-Scripts\Script Files\SETTINGS - GLOBAL VARIABLES.vbs")
+text_from_the_other_script = fso_command.ReadAll
+fso_command.Close
+Execute text_from_the_other_script
 
-'LOADING ROUTINE FUNCTIONS FROM GITHUB REPOSITORY---------------------------------------------------------------------------
-url = "https://raw.githubusercontent.com/MN-CS-Script-Team/PRISM-Scripts/master/Shared%20Functions%20Library/PRISM%20Functions%20Library.vbs"
+'LOADING SCRIPT
+url = script_repository & "/BULK/BULK - MAIN MENU.vbs"
 SET req = CreateObject("Msxml2.XMLHttp.6.0")				'Creates an object to get a URL
 req.open "GET", url, FALSE									'Attempts to open the URL
 req.send													'Sends request
@@ -27,25 +30,3 @@ ELSE														'Error message, tells user to try to reach github.com, otherwi
 			"URL: " & url
 			StopScript
 END IF
-
-script_end_procedure("This script is no longer supported.")
-
-'VARIABLES AND CALCULATIONS----------------------------------------------------------------------------------------------------
-'PRISM training uses the current month as part of the password. This figures out what it needs to be.
-date_for_PW = datepart("m", date) 
-If len(date_for_PW) = 1 then date_for_PW = "0" & date_for_PW
-
-'Connects to BlueZone
-EMConnect ""
-
-EMReadScreen ADMNET_check, 6, 1, 2
-If ADMNET_check <> "ADMNET" then script_end_procedure("You are not in ADMNET (main STATE OF MN screen). The script will now stop.")
-
-EMWriteScreen "cicsdt4", 12, 61
-transmit
-EMWaitReady 0, 0 'waits as the script might hang
-EMWriteScreen "pwcst05", 12, 21
-EMWriteScreen "Train#" & date_for_PW, 13, 21
-transmit
-EMSendKey "QQT4"
-transmit
