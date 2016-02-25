@@ -1,4 +1,4 @@
-'GATHERING STATS----------------------------------------------------------------------------------------------------
+GATHERING STATS----------------------------------------------------------------------------------------------------
 
 name_of_script = "ACTIONS - IW CALCULATOR.vbs"
 start_time = timer
@@ -106,7 +106,7 @@ LOOP UNTIL err_msg = ""
 
 Current_Support = CDbl(Current_Support)
 
-IF Percent = checked THEN MoTotal = Month_Accrual * 1.2
+IF Percent = checked THEN MoTotal = Current_Support * 1.2
 IF Percent = 0 THEN MoTotal = Current_Support
 
 'Calculating pay period amounts
@@ -123,16 +123,17 @@ SemiMoPay = FormatNumber(SemiMoPay, 2)
 CALL navigate_to_PRISM_screen ("PALC")
  
 
-'msgbox needed to show calculations, weekly, biweekly, semi monthly, and monthly
+'msgbox needed to show calculations, weekly, biweekly, semi monthly, and monthly with 20%
 IF Percent = checked THEN 
 	MsgBox ("Monthly: $" & MoTotal & VbNewline & VbNewline & _
 		"Weekly: $" & WeekPay & VbNewline & VbNewline & _
 		"Bi-Weekly: $" & BiWeekPay & VbNewline & VbNewline & _
 		"Semi-Monthly: $" & SemiMoPay & VbNewline & VbNewline & _
-		"20% of current support:  $" & Month_Accrual * .2)
+		"20% of current support:  $" & Current_Support * .2)
 
 END IF
 
+'without 20%
 IF Percent = 0 THEN 
 	MsgBox ("Monthly: $" & MoTotal & VbNewline & VbNewline & _
 		"Weekly: $" & WeekPay & VbNewline & VbNewline & _
@@ -144,3 +145,4 @@ END IF
 
 
 script_end_procedure("")
+
