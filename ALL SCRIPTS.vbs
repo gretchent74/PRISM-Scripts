@@ -70,7 +70,7 @@ cs_scripts_array(script_num).script_name		= "CLIENT CONTACT"
 cs_scripts_array(script_num).script_type		= "NOTES"
 cs_scripts_array(script_num).file_name			= "NOTES - CLIENT CONTACT.vbs"
 cs_scripts_array(script_num).description		= "Creates a uniform CAAD note for when you have contact with or about client."
-cs_scripts_array(script_num).agencies_that_use		= "ANOKA, BELTRAMI, DAKOTA, HENNEPIN, MILLE LACS, OLMSTED, RAMSEY, RENVILLE, SCOTT, STEARNS, WASHINGTON, WRIGHT"
+cs_scripts_array(script_num).agencies_that_use		= "ANOKA, BELTRAMI, HENNEPIN, MILLE LACS, OLMSTED, RAMSEY, RENVILLE, SCOTT, STEARNS, WASHINGTON, WRIGHT"
 
 script_num = script_num + 1
 ReDim Preserve cs_scripts_array(script_num)
@@ -196,7 +196,7 @@ cs_scripts_array(script_num).script_name		= "INTAKE DOCS RECEIVED"
 cs_scripts_array(script_num).script_type		= "NOTES"
 cs_scripts_array(script_num).file_name			= "NOTES - INTAKE DOCS RECEIVED.vbs"
 cs_scripts_array(script_num).description		= "NEW 02/2016!! Creates CAAD note for recording receipt of intake docs."
-cs_scripts_array(script_num).agencies_that_use		= "BELTRAMI, DAKOTA, HENNEPIN, MILLE LACS, OLMSTED, RAMSEY, RENVILLE, SCOTT, STEARNS, WASHINGTON, WRIGHT"
+cs_scripts_array(script_num).agencies_that_use		= "BELTRAMI, HENNEPIN, MILLE LACS, OLMSTED, RAMSEY, RENVILLE, SCOTT, STEARNS, WASHINGTON, WRIGHT"
 
 script_num = script_num + 1
 ReDim Preserve cs_scripts_array(script_num)
@@ -223,7 +223,7 @@ cs_scripts_array(script_num).script_name		= "MES FINANCIAL DOCS SENT"
 cs_scripts_array(script_num).script_type		= "NOTES"
 cs_scripts_array(script_num).file_name			= "NOTES - MES FINANCIAL DOCS SENT.vbs"
 cs_scripts_array(script_num).description		= "NEW 02/2016!! Creates CAAD note for recording documents sent to parties."
-cs_scripts_array(script_num).agencies_that_use		= "BELTRAMI, DAKOTA, HENNEPIN, MILLE LACS, OLMSTED, RAMSEY, RENVILLE, SCOTT, STEARNS, WASHINGTON, WRIGHT"
+cs_scripts_array(script_num).agencies_that_use		= "BELTRAMI, HENNEPIN, MILLE LACS, OLMSTED, RAMSEY, RENVILLE, SCOTT, STEARNS, WASHINGTON, WRIGHT"
 
 script_num = script_num + 1
 ReDim Preserve cs_scripts_array(script_num)
@@ -241,7 +241,7 @@ cs_scripts_array(script_num).script_name		= "NON PAY"
 cs_scripts_array(script_num).script_type		= "ACTIONS"
 cs_scripts_array(script_num).file_name			= "ACTIONS - NON PAY.vbs"
 cs_scripts_array(script_num).description		= "Sends DORD doc and creates CAAD related to Non-Pay."
-cs_scripts_array(script_num).agencies_that_use		= "BELTRAMI, DAKOTA, HENNEPIN, MILLE LACS, OLMSTED, RAMSEY, RENVILLE, SCOTT, STEARNS, WASHINGTON, WRIGHT"
+cs_scripts_array(script_num).agencies_that_use		= "BELTRAMI, HENNEPIN, MILLE LACS, OLMSTED, RAMSEY, RENVILLE, SCOTT, STEARNS, WASHINGTON, WRIGHT"
 
 script_num = script_num + 1
 ReDim Preserve cs_scripts_array(script_num)
@@ -250,7 +250,7 @@ cs_scripts_array(script_num).script_name		= "NO PAYMENT MONTHS ONE-FOUR"
 cs_scripts_array(script_num).script_type		= "NOTES"
 cs_scripts_array(script_num).file_name			= "NOTES - NO PAYMENT MONTHS ONE-FOUR.vbs"
 cs_scripts_array(script_num).description		= "CAAD template documenting non-payment enforcement actions."
-cs_scripts_array(script_num).agencies_that_use		= "BELTRAMI, DAKOTA, HENNEPIN, MILLE LACS, OLMSTED, RAMSEY, RENVILLE, SCOTT, STEARNS, WASHINGTON, WRIGHT"
+cs_scripts_array(script_num).agencies_that_use		= "BELTRAMI, HENNEPIN, MILLE LACS, OLMSTED, RAMSEY, RENVILLE, SCOTT, STEARNS, WASHINGTON, WRIGHT"
 
 script_num = script_num + 1
 ReDim Preserve cs_scripts_array(script_num)
@@ -277,7 +277,7 @@ cs_scripts_array(script_num).script_name		= "PAY OR REPORT"
 cs_scripts_array(script_num).script_type		= "NOTES"
 cs_scripts_array(script_num).file_name			= "NOTES - PAY OR REPORT.vbs"
 cs_scripts_array(script_num).description		= "CAAD note for contempt/''pay or report'' instances."
-cs_scripts_array(script_num).agencies_that_use		= "ANOKA, BELTRAMI, DAKOTA, HENNEPIN, MILLE LACS, OLMSTED, RAMSEY, RENVILLE, SCOTT, STEARNS, WASHINGTON, WRIGHT"
+cs_scripts_array(script_num).agencies_that_use		= "ANOKA, BELTRAMI, HENNEPIN, MILLE LACS, OLMSTED, RAMSEY, RENVILLE, SCOTT, STEARNS, WASHINGTON, WRIGHT"
 
 script_num = script_num + 1
 ReDim Preserve cs_scripts_array(script_num)
@@ -286,7 +286,7 @@ cs_scripts_array(script_num).script_name		= "PAYMENT PLAN REVIEW"
 cs_scripts_array(script_num).script_type		= "NOTES"
 cs_scripts_array(script_num).file_name			= "NOTES - PAYMENT PLAN REVIEW.vbs"
 cs_scripts_array(script_num).description		= "CAAD template related to payment plan."
-cs_scripts_array(script_num).agencies_that_use		= "ANOKA, BELTRAMI, DAKOTA, HENNEPIN, MILLE LACS, OLMSTED, RAMSEY, RENVILLE, SCOTT, STEARNS, WASHINGTON, WRIGHT"
+cs_scripts_array(script_num).agencies_that_use		= "ANOKA, BELTRAMI, HENNEPIN, MILLE LACS, OLMSTED, RAMSEY, RENVILLE, SCOTT, STEARNS, WASHINGTON, WRIGHT"
 
 script_num = script_num + 1
 ReDim Preserve cs_scripts_array(script_num)
@@ -295,7 +295,7 @@ cs_scripts_array(script_num).script_name		= "PRORATE SUPPORT"
 cs_scripts_array(script_num).script_type		= "ACTIONS"
 cs_scripts_array(script_num).file_name			= "ACTIONS - PRORATE SUPPORT.vbs"
 cs_scripts_array(script_num).description		= "Calculator for determining pro-rated support for patrial months."
-cs_scripts_array(script_num).agencies_that_use		= "ANOKA, BELTRAMI, DAKOTA, HENNEPIN, MILLE LACS, OLMSTED, RAMSEY, RENVILLE, SCOTT, STEARNS, WASHINGTON, WRIGHT"
+cs_scripts_array(script_num).agencies_that_use		= "ANOKA, BELTRAMI, HENNEPIN, MILLE LACS, OLMSTED, RAMSEY, RENVILLE, SCOTT, STEARNS, WASHINGTON, WRIGHT"
 
 script_num = script_num + 1
 ReDim Preserve cs_scripts_array(script_num)
@@ -304,7 +304,7 @@ cs_scripts_array(script_num).script_name		= "QUARTERLY REVIEWS"
 cs_scripts_array(script_num).script_type		= "NOTES"
 cs_scripts_array(script_num).file_name			= "NOTES - QUARTERLY REVIEWS.vbs"
 cs_scripts_array(script_num).description		= "CAAD note for quarterly review processes."
-cs_scripts_array(script_num).agencies_that_use		= "ANOKA, BELTRAMI, DAKOTA, HENNEPIN, MILLE LACS, OLMSTED, RAMSEY, RENVILLE, SCOTT, STEARNS, WASHINGTON, WRIGHT"
+cs_scripts_array(script_num).agencies_that_use		= "ANOKA, BELTRAMI, HENNEPIN, MILLE LACS, OLMSTED, RAMSEY, RENVILLE, SCOTT, STEARNS, WASHINGTON, WRIGHT"
 
 script_num = script_num + 1
 ReDim Preserve cs_scripts_array(script_num)
@@ -340,7 +340,7 @@ cs_scripts_array(script_num).script_name		= "TRANSFER CASE(S)"
 cs_scripts_array(script_num).script_type		= "BULK"
 cs_scripts_array(script_num).file_name			= "BULK - CASE TRANSFER.vbs"
 cs_scripts_array(script_num).description		= "Script for transfering multiple cases, from one caseload to multiple caseloads."
-cs_scripts_array(script_num).agencies_that_use		= "ANOKA, BELTRAMI, DAKOTA, HENNEPIN, MILLE LACS, OLMSTED, RAMSEY, RENVILLE, SCOTT, STEARNS, WASHINGTON, WRIGHT"
+cs_scripts_array(script_num).agencies_that_use		= "ANOKA, BELTRAMI, HENNEPIN, MILLE LACS, OLMSTED, RAMSEY, RENVILLE, SCOTT, STEARNS, WASHINGTON, WRIGHT"
 
 script_num = script_num + 1
 ReDim Preserve cs_scripts_array(script_num)
