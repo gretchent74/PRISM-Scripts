@@ -1,5 +1,3 @@
-
-
 'GATHERING STATS----------------------------------------------------------------------------------------------------
 
 name_of_script = "ACTIONS - UNREIMBURSED UNINSURED RETURNED DOCS.vbs"
