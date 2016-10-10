@@ -1,4 +1,5 @@
 
+
 'GATHERING STATS----------------------------------------------------------------------------------------------------
 
 name_of_script = "ACTIONS - UNREIMBURSED UNINSURED RETURNED DOCS.vbs"
@@ -7,9 +8,6 @@ STATS_counter = 1
 'STATS_manualtime = 
 STATS_denomination = "C"
 
-
-'this is a function document
-DIM beta_agency, FuncLib_URL, run_locally, use_master_branch, req, fso
 
 'LOADING FUNCTIONS LIBRARY FROM GITHUB REPOSITORY===========================================================================
 IF IsEmpty(FuncLib_URL) = TRUE THEN	'Shouldn't load FuncLib if it already loaded once
@@ -45,8 +43,6 @@ END IF
 'this is where the copy and paste from functions library ended
 
 'first dialog 
-DIM UnUn1_Dialog, PRISM_case_number, CP_checkbox, NCP_checkbox, err_msg, ButtonPressed
-
 BeginDialog UnUn1_Dialog, 0, 0, 276, 135, "Unreimbursed Uninsured Docs Received"
   EditBox 70, 5, 80, 15, PRISM_case_number
   CheckBox 95, 80, 20, 10, "CP", CP_checkbox
@@ -67,8 +63,11 @@ EMConnect ""
 'brings me to the CAPS screen
 CALL navigate_to_PRISM_screen ("CAPS")
 
+'check for prism (password out)before continuing
+CALL check_for_PRISM(true)
+
 'this auto fills prism case number in dialog
-EMReadScreen PRISM_case_number, 13, 4, 8 
+CALL PRISM_case_number_finder(PRISM_case_number)
 
 'THE LOOP--------------------------------------
 'adding a loop
@@ -88,12 +87,8 @@ LOOP UNTIL err_msg = ""
 
 
 'dialog if cp is requesting collection of un/un
-DIM Cp_requested_Dialog, CPCAAD_checkbox, worker_signature, jude_checkbox, amount, ncp_documents_checkbox
-
 IF CP_checkbox = 1 THEN
 	'CALL navigate_to_PRISM_screen ("JUDE")
-
-'*************************ADD INFORMATION TO ADD CP's NAME TO DIALOG BOX******************************************************************************************************
 
 BeginDialog Cp_requested_Dialog, 0, 0, 216, 200, "Completed Documents received from Requesting Party (CP)"
   EditBox 80, 5, 60, 15, amount
@@ -154,8 +149,6 @@ BeginDialog DATE_SERVED_dialog, 0, 0, 146, 75, "DATE SERVED"
 EndDialog
 
 'dialog box for date on aff of service
-DIM date, DATE_SERVED_dialog, date_served, confidential_checkbox
-
 Do
 	err_msg = ""
 	Dialog DATE_SERVED_dialog
@@ -227,7 +220,6 @@ IF ncp_documents_checkbox = 1 AND confidential_checkbox = 0 THEN
 	transmit
 
 '''need to select legal heading
-DIM LH_dialog
 BeginDialog LH_dialog, 0, 0, 171, 95, "Select Legal Heading"
   ButtonGroup ButtonPressed
     OkButton 60, 75, 50, 15
@@ -300,55 +292,27 @@ END IF
 
 
 IF jude_checkbox = 1 THEN
+	'CP Name											
+	call navigate_to_PRISM_screen("CPDE")
+	EMWriteScreen CP_MCI, 4, 7
+	EMReadScreen CP_F, 12, 8, 34
+	EMReadScreen CP_M, 12, 8, 56
+	EMReadScreen CP_L, 17, 8, 8
 
-' This is a custom function to change the format of a participant name.  The parameter is a string with the 
-' client's name formatted like "Levesseur, Wendy K", and will change it to "Wendy K LeVesseur".  
-
-FUNCTION change_client_name_to_FML(client_name)
-	client_name = trim(client_name)
-	length = len(client_name)
-	position = InStr(client_name, ", ")
-	last_name = Left(client_name, position-1)
-	first_name = Right(client_name, length-position-1)	
-	client_name = first_name & " " & last_name
-	client_name = lcase(client_name)
-	call fix_case(client_name, 1)
-	change_client_name_to_FML = client_name 'To make this a return function, this statement must set the value of the function name
-END FUNCTION
-
-'This is a custom function to fix data that we are reading from PRISM that includes underscores.  The parameter is a string for the 
-'variable to be searched.  The function searches the variable and removes underscores.  Then, the fix case function is called to format
-'the string in the correct case.  Finally, the data is trimmed to remove any excess spaces.	
-FUNCTION fix_read_data (search_string) 
-	search_string = replace(search_string, "_", "")
-	call fix_case(search_string, 1)
-	search_string = trim(search_string)
-	fix_read_data = search_string 'To make this a return function, this statement must set the value of the function name
-END FUNCTION
-
-'END CUSTOM FUNCTIONS-------------------------------------------------------
-
-'CP Name											
-call navigate_to_PRISM_screen("CPDE")
-EMWriteScreen CP_MCI, 4, 7
-EMReadScreen CP_F, 12, 8, 34
-EMReadScreen CP_M, 12, 8, 56
-EMReadScreen CP_L, 17, 8, 8
-
-CP_name = fix_read_data(CP_F) & " " & fix_read_data(CP_M) & " " & fix_read_data(CP_L)	
-CP_name = trim(CP_Name)
+	CP_name = fix_read_data(CP_F) & " " & fix_read_data(CP_M) & " " & fix_read_data(CP_L)	
+	CP_name = trim(CP_Name)
 
 
-CALL navigate_to_PRISM_screen ("SUOD")
-EMWriteScreen "B", 3, 29
-transmit
+	CALL navigate_to_PRISM_screen ("SUOD")
+	EMWriteScreen "B", 3, 29
+	transmit
 
 BeginDialog PRISM_INFO_Dialog, 0, 0, 266, 185, "Info needed to add Un/Un to PRISM"
   EditBox 85, 25, 25, 15, CO_Seq
   EditBox 50, 45, 50, 15, From_date
   EditBox 130, 45, 50, 15, To_date
   EditBox 50, 70, 200, 15, CP_name
-  EditBox 65, 110, 50, 15, eff_date
+  EditBox 65, 110, 40, 15, eff_date
   EditBox 55, 135, 50, 15, beg_date
   ButtonGroup ButtonPressed
     OkButton 145, 160, 50, 15
@@ -367,7 +331,6 @@ BeginDialog PRISM_INFO_Dialog, 0, 0, 266, 185, "Info needed to add Un/Un to PRIS
   Text 120, 140, 50, 10, "xx/xx/xxxx"
 EndDialog
 
-DIM PRISM_INFO_Dialog, Co_Seq, From_date, To_date, cp_name, eff_date, beg_date
 
 Do
 	err_msg = ""
@@ -390,26 +353,25 @@ Loop until err_msg = ""
 	EMWriteScreen "C", 3, 29
 	transmit
 	EMWriteScreen "A", 3, 29
-	EMWriteScreen (Co_Seq), 4, 34
+	EMWriteScreen Co_Seq, 4, 34
 	EMWriteScreen "JME", 10, 6
-	EMWriteScreen (From_date), 10, 17
-	EMWriteScreen (To_date), 10, 31
-	EMWriteScreen (CP_name), 13, 16
-	EMWriteScreen (amount), 14, 17
+	EMWriteScreen From_date, 10, 17
+	EMWriteScreen To_date, 10, 31
+	EMWriteScreen CP_name, 13, 16
+	EMWriteScreen amount, 14, 17
 	EMWriteScreen "JOL", 15, 20
 	PF11
 	EMWriteScreen "un/un expenses requested by cp", 12, 3
 	transmit
 
 	
-		DIM jol_success
+		'DIM jol_success
 		EMReadScreen jol_success, 18, 24, 33
 		IF jol_success <> "added successfully" THEN 
-			Msgbox "Jude information was not added correctly, please reneter information.  Script Ended."
-			StopScript
+			script_end_procedure ("Jude information was not added correctly, please reneter information.  Script Ended.")
 		END IF
 
-	DIM jdgmt_number
+	'DIM jdgmt_number
 	'reading judgment sequence number to add to ncod
 	EMReadScreen jdgmt_number, 2, 4, 52
 		
@@ -420,18 +382,18 @@ Loop until err_msg = ""
 	EMWriteScreen "A", 3, 29
 	EMWriteScreen "JME", 4, 34
 	EMWriteScreen "  ", 4, 053
-	EMWriteScreen (eff_date), 9, 59 
+	EMWriteScreen eff_date, 9, 59 
 	EMWriteScreen "npa", 12, 10
-	EMWriteScreen (Co_Seq), 11, 62
+	EMWriteScreen Co_Seq, 11, 62
 	EMWriteScreen "n", 13, 12
-	EMWriteScreen (Co_Seq), 12, 55
-	EMWriteScreen (jdgmt_number), 12, 74
+	EMWriteScreen Co_Seq, 12, 55
+	EMWriteScreen jdgmt_number, 12, 74
 	EMWriteScreen "y", 18, 57
-	EMWriteScreen (beg_date), 14, 68 
+	EMWriteScreen beg_date, 14, 68 
 	transmit
 	'transmit
 	
-	DIM ncod_success
+	'DIM ncod_success
 	EMReadScreen ncod_success, 18 , 24, 34
 		IF ncod_success <> "added successfully" THEN 
 			'Msgbox "NCOD information was not added correctly, please reneter information.  Script Ended."
@@ -444,13 +406,13 @@ Loop until err_msg = ""
 	CALL navigate_to_PRISM_screen ("OBBD")
 	EMWriteScreen "M", 3, 29
 	EMWriteScreen "           ", 18, 15
-	EMWriteScreen (amount), 18, 15
+	EMWriteScreen amount, 18, 15
 	PF11
 	EMWriteScreen "added un/un expenses. " & worker_signature, 18, 25
 	EMWriteScreen "n", 17, 72 
 	transmit
 
-	DIM obbd_success
+	'DIM obbd_success
 	EMReadScreen obbd_success, 13 , 24, 68
 		IF obbd_success <> "modified succ" THEN 
 			Msgbox "OBBD information was not added correctly, please reneter information.  Script Ended."
@@ -462,7 +424,7 @@ CALL navigate_to_PRISM_screen ("NCOL")
 END IF
 
 	
-'*********************************************************************dialog if ncp is requesting collection of un/un from the cp
+'*****************************dialog if ncp is requesting collection of un/un from the cp
 IF NCP_checkbox = 1 THEN
 
 BeginDialog Ncp_requested_Dialog, 0, 0, 216, 200, "Completed Documents received from Requesting Party (NCP)"
@@ -554,7 +516,7 @@ CALL navigate_to_PRISM_screen ("DORD")
 	EMWriteScreen "S", 11, 5
 	transmit 
 	
-	EMWriteScreen(amount), 16, 15
+	EMWriteScreen amount, 16, 15
 	transmit
 	PF3
 	EMWriteScreen "m", 3, 29
@@ -586,7 +548,7 @@ IF cp_documents_checkbox = 1 AND confidential_checkbox = 0 THEN
 	transmit
 	EMWriteScreen "Medical/Dental Expenses", 16, 15
 	transmit
-	EMWriteScreen (date_served), 16, 15
+	EMWriteScreen date_served, 16, 15
 	transmit
 	PF8
 	EMWriteScreen "s", 8, 5
@@ -638,7 +600,7 @@ IF cp_documents_checkbox = 1 AND confidential_checkbox = 1 THEN
 	transmit
 	EMWriteScreen "Medical/Dental Expenses", 16, 15
 	transmit
-	EMWriteScreen (date_served), 16, 15
+	EMWriteScreen date_served, 16, 15
 	transmit
 	PF8
 	EMWriteScreen "s", 8, 5
@@ -662,20 +624,18 @@ EndDialog
 
 			Dialog LH_dialog  'name of dialog
 			IF buttonpressed = 0 then stopscript		'Cancel
-			
+			END IF
 END IF
-	END IF
 
 
 IF cpod_checkbox = 1 THEN
-
-CALL navigate_to_PRISM_screen ("SUOD")
-EMWriteScreen "B", 3, 29
-transmit
+	CALL navigate_to_PRISM_screen ("SUOD")
+	EMWriteScreen "B", 3, 29
+	transmit
 
 BeginDialog CPOD_Dialog, 0, 0, 176, 120, "CPOD"
   EditBox 85, 25, 25, 15, CO_Seq
-  EditBox 65, 45, 50, 15, eff_date
+  EditBox 65, 45, 40, 15, eff_date
   EditBox 55, 65, 50, 15, beg_date
   ButtonGroup ButtonPressed
     OkButton 60, 100, 50, 15
@@ -689,7 +649,7 @@ BeginDialog CPOD_Dialog, 0, 0, 176, 120, "CPOD"
   Text 115, 70, 45, 10, "xx/xx/xxxx"
 EndDialog
 
-DIM CPOD_Dialog
+
 Do
 	err_msg = ""
 	Dialog CPOD_Dialog
@@ -705,47 +665,46 @@ Loop until err_msg = ""
 
 
 'add information on cpod
-	CALL navigate_to_PRISM_screen ("CPOD")
-	EMWriteScreen "C", 3, 29
-	transmit
-	EMWriteScreen "A", 3, 29
-	EMSetCursor 4, 53
-	EMWriteScreen "  ", 4, 53
-	EMWriteScreen "JME", 4, 34
-	EMWriteScreen "DIR", 9, 35
-	EMWriteScreen (eff_date), 9, 59
-	EMWriteScreen "MDN", 12, 10 
-	EMWriteScreen "N", 13, 12 
-	EMWriteScreen (Co_Seq), 12, 55 
-	EMWriteScreen (beg_date), 14, 68
-	EMWriteScreen "D", 18, 57
-	transmit
+		CALL navigate_to_PRISM_screen ("CPOD")
+		EMWriteScreen "C", 3, 29
+		transmit
+		EMWriteScreen "A", 3, 29
+		EMSetCursor 4, 53
+		EMWriteScreen "  ", 4, 53
+		EMWriteScreen "JME", 4, 34
+		EMWriteScreen "DIR", 9, 35
+		EMWriteScreen eff_date, 9, 59
+		EMWriteScreen "MDN", 12, 10 
+		EMWriteScreen "N", 13, 12 
+		EMWriteScreen Co_Seq, 12, 55 
+		EMWriteScreen beg_date, 14, 68
+		EMWriteScreen "D", 18, 57
+		transmit
 	
-	DIM cpod_success
-	EMReadScreen cpod_success, 18 , 24, 33
-		IF cpod_success <> "added successfully" THEN 
-			Msgbox "CPOD information was not added correctly, please reneter information.  Script Ended."
-			StopScript
-		END IF
+	
+		EMReadScreen cpod_success, 18 , 24, 33
+			IF cpod_success <> "added successfully" THEN 
+				script_end_procedure ("CPOD information was not added correctly, please reneter information.  Script Ended.")
+			END IF
 	
 'add information on obbd
-	CALL navigate_to_PRISM_screen ("OBBD")
-	EMWriteScreen "M", 3, 29
-	EMSetCursor 18, 15
-	EMWriteScreen "            ", 18, 15
-	EMWriteScreen (amount), 18, 15
-	PF11
-	EMWriteScreen "added un/un expenses. " & worker_signature, 18, 25
-	EMWriteScreen "n", 17, 72 
-	transmit
+		CALL navigate_to_PRISM_screen ("OBBD")
+		EMWriteScreen "M", 3, 29
+		EMSetCursor 18, 15
+		EMWriteScreen "            ", 18, 15
+		EMWriteScreen amount, 18, 15
+		PF11
+		EMWriteScreen "added un/un expenses. " & worker_signature, 18, 25
+		EMWriteScreen "n", 17, 72 
+		transmit
 
 	'DIM obbd_success
-	EMReadScreen obbd_success, 13 , 24, 66
-		IF obbd_success <> "modified succ" THEN 
-			Msgbox "OBBD information was not added correctly, please reneter information.  Script Ended."
-			StopScript
-		END IF
-CALL navigate_to_PRISM_screen ("CPOL")
+		EMReadScreen obbd_success, 13 , 24, 66
+			IF obbd_success <> "modified succ" THEN 
+				script_end_procedure ("OBBD information was not added correctly, please reneter information.  Script Ended.")
+			END IF
+
+		CALL navigate_to_PRISM_screen ("CPOL")
 END IF		
 	
 script_end_procedure("")
