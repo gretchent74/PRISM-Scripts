@@ -1,0 +1,696 @@
+
+'GATHERING STATS----------------------------------------------------------------------------------------------------
+
+'name_of_script = "ACTIONS -DL Payment Agreement.vbs"
+'start_time = timer
+
+
+'this is a function document
+'DIM beta_agency 'remember to add
+
+'LOADING FUNCTIONS LIBRARY FROM GITHUB REPOSITORY===========================================================================
+IF IsEmpty(FuncLib_URL) = TRUE THEN	'Shouldn't load FuncLib if it already loaded once
+	IF run_locally = FALSE or run_locally = "" THEN	   'If the scripts are set to run locally, it skips this and uses an FSO below.
+		IF use_master_branch = TRUE THEN			   'If the default_directory is C:\DHS-MAXIS-Scripts\Script Files, you're probably a scriptwriter and should use the master branch.
+			FuncLib_URL = "https://raw.githubusercontent.com/MN-Script-Team/BZS-FuncLib/master/MASTER%20FUNCTIONS%20LIBRARY.vbs"
+		Else											'Everyone else should use the release branch.
+			FuncLib_URL = "https://raw.githubusercontent.com/MN-Script-Team/BZS-FuncLib/RELEASE/MASTER%20FUNCTIONS%20LIBRARY.vbs"
+		End if
+		SET req = CreateObject("Msxml2.XMLHttp.6.0")				'Creates an object to get a FuncLib_URL
+		req.open "GET", FuncLib_URL, FALSE							'Attempts to open the FuncLib_URL
+		req.send													'Sends request
+		IF req.Status = 200 THEN									'200 means great success
+			Set fso = CreateObject("Scripting.FileSystemObject")	'Creates an FSO
+			Execute req.responseText								'Executes the script code
+		ELSE														'Error message
+			critical_error_msgbox = MsgBox ("Something has gone wrong. The Functions Library code stored on GitHub was not able to be reached." & vbNewLine & vbNewLine &_
+                                            "FuncLib URL: " & FuncLib_URL & vbNewLine & vbNewLine &_
+                                            "The script has stopped. Please check your Internet connection. Consult a scripts administrator with any questions.", _
+                                            vbOKonly + vbCritical, "BlueZone Scripts Critical Error")
+            StopScript
+		END IF
+	ELSE
+		FuncLib_URL = "C:\BZS-FuncLib\MASTER FUNCTIONS LIBRARY.vbs"
+		Set run_another_script_fso = CreateObject("Scripting.FileSystemObject")
+		Set fso_command = run_another_script_fso.OpenTextFile(FuncLib_URL)
+		text_from_the_other_script = fso_command.ReadAll
+		fso_command.Close
+		Execute text_from_the_other_script
+	END IF
+END IF
+'END FUNCTIONS LIBRARY BLOCK================================================================================================
+
+
+
+'DIALOGS---------------------------------------------------------------------------
+
+
+'DIM PRISM_case_number, preapproved_checkbox, approval_needed_checkbox, DL_Dialog, err_msg, ButtonPressed, preapproved_checklist_button  
+
+BeginDialog DL_Dialog, 0, 0, 211, 140, "DL Payment Agreement Type"
+  EditBox 55, 5, 80, 15, PRISM_case_number
+  CheckBox 15, 45, 65, 10, "PREAPPROVED", preapproved_checkbox
+  CheckBox 95, 45, 100, 10, "ACA APPROVAL NEEDED", approval_needed_checkbox
+  ButtonGroup ButtonPressed
+    PushButton 10, 65, 90, 15, "Preapproved Checklist", preapproved_checklist_button
+  CheckBox 15, 95, 175, 10, "Check to send DL Payment Agreement Offer letter", dl_offer_letter_checkbox
+  ButtonGroup ButtonPressed
+    OkButton 100, 120, 50, 15
+    CancelButton 155, 120, 50, 15
+  Text 5, 10, 50, 10, "Case Number"
+  Text 30, 30, 140, 10, "Send DL payment agreement offer letter"
+EndDialog
+
+
+'THE SCRIPT-----------------------------------
+
+'Connecting to BlueZone
+EMConnect ""
+
+'brings me to the CAPS screend
+CALL navigate_to_PRISM_screen ("CAPS")
+
+'check for prism (password out)before continuing
+CALL check_for_PRISM(true)
+
+'this auto fills prism case number in dialog
+CALL PRISM_case_number_finder(PRISM_case_number)
+
+
+'THE LOOP--------------------------------------
+'adding a loop
+Do
+	err_msg = ""
+	Dialog DL_Dialog 'Shows name of dialog
+		IF buttonpressed = 0 then stopscript		'Cancel
+		IF PRISM_case_number = "" THEN err_msg = err_msg & vbNewline & "Prism case number must be completed"
+			'IF both cp box and ncp box blank
+		IF  preapproved_checkbox = 0 AND approval_needed_checkbox = 0 AND preapproved_checklist_button = 0 THEN err_msg = vbNewline & "You must select DL Agreement Type ro Preapproved Checklist."
+		IF err_msg <> "" THEN 
+			MsgBox "***NOTICE!!!***" & vbNewline & err_msg & vbNewline & vbNewline & "Please resolve for the script to continue."
+		END IF
+
+LOOP UNTIL err_msg = ""
+
+'END LOOP--------------------------------------
+
+'2nd Dialog for Preapproved Agreements
+'DIM dordagreement_checkbox, agreement_checkbox, Preapproved_Dialog
+ 
+IF preapproved_checkbox = 1 THEN
+	
+BeginDialog Preapproved_Dialog, 0, 0, 141, 80, "Preapproved DL Agreements"
+  CheckBox 15, 20, 80, 10, "Dord DL Agreement", dordagreement_checkbox
+  CheckBox 15, 35, 65, 10, "ACA Agreement", agreement_checkbox
+  ButtonGroup ButtonPressed
+    OkButton 30, 60, 50, 15
+    CancelButton 85, 60, 50, 15
+  Text 35, 5, 90, 10, "PRE-APPROVED OPTIONS"
+EndDialog
+
+
+Do
+	err_msg = ""
+	Dialog Preapproved_Dialog 'Shows name of dialog
+		IF buttonpressed = 0 then stopscript		'Cancel
+		IF dordagreement_checkbox = 0 AND agreement_checkbox = 0 THEN err_msg = vbNewline & "You must select a DL Agreement type."
+		IF err_msg <> "" THEN 
+			MsgBox "***NOTICE!!!***" & vbNewline & err_msg & vbNewline & vbNewline & "Please resolve for the script to continue."
+		END IF
+
+LOOP UNTIL err_msg = ""
+
+END IF
+
+'2nd dialog for approval needed agreements
+'DIM graduated_approval_checkbox, agreement_approval_checkbox, arrears_approval_checkbox, Approval_Dialog, agreement_approval_lumpsum_checkbox
+
+IF approval_needed_checkbox = 1 THEN
+
+BeginDialog Approval_Dialog, 0, 0, 191, 145, "Approval NEEDED DL Agreements"
+  CheckBox 15, 20, 75, 10, "ACA DL Agreement", agreement_approval_checkbox
+  CheckBox 15, 45, 130, 10, "ACA DL Agreement WITH Lump Sum", agreement_approval_lumpsum_checkbox
+  CheckBox 15, 70, 110, 10, "ACA Graduated DL Agreement", graduated_approval_checkbox
+  CheckBox 15, 95, 115, 10, "ACA Arrears Only DL Agreement", arrears_approval_checkbox
+  ButtonGroup ButtonPressed
+    OkButton 80, 125, 50, 15
+    CancelButton 135, 125, 50, 15
+  Text 35, 5, 120, 10, "ACA APPROVAL NEEDED OPTIONS"
+  Text 25, 30, 100, 10, "(per court order no lump sum)"
+  Text 25, 55, 110, 10, "(per court order With lump sum)"
+  Text 25, 80, 80, 10, "(graduated payments)"
+  Text 25, 105, 50, 10, "(arrears only)"
+EndDialog
+
+
+Do
+	err_msg = ""
+	Dialog Approval_Dialog 'Shows name of dialog
+		IF buttonpressed = 0 then stopscript		'Cancel
+		IF graduated_approval_checkbox = 0 AND agreement_approval_checkbox = 0 AND arrears_approval_checkbox = 0 AND agreement_approval_lumpsum_checkbox = 0 THEN err_msg = vbNewline & "You must select a DL Agreement type."
+		IF err_msg <> "" THEN 
+			MsgBox "***NOTICE!!!***" & vbNewline & err_msg & vbNewline & vbNewline & "Please resolve for the script to continue."
+		END IF
+
+LOOP UNTIL err_msg = ""
+
+END IF
+'-----------------------------------------
+
+
+'-----
+'DIM court_file
+'find court file number for (word dl agreement)
+CALL navigate_to_PRISM_screen ("SUOD")
+EMWritescreen "B", 3, 29
+transmit
+EMReadscreen court_file, 17, 10, 2
+
+'DIM CCH_amount, CCC_amount, medical_amount, end_of_data_check, CMI_amount, CMS_amount
+'find basic suppor amount, medical, and child care
+CALL navigate_to_PRISM_screen ("NCOL")
+EMWritescreen "cch", 20, 39
+transmit
+	
+cch_Row = 9
+Do    'looking for cch so it will look at more than cch 01
+	EMReadScreen end_of_data_check, 11, cch_Row, 32
+	IF end_of_data_check = "End of Data" THEN
+		EMReadScreen CCH_amount, 9, cch_Row + 1, 36
+		CCH_amount = Trim(CCH_amount)
+		EXIT DO
+	Else
+		cch_Row = cch_Row + 1
+	END IF 
+Loop until cch_Row = 19
+	
+	CALL navigate_to_PRISM_screen ("NCOL")
+	EMWritescreen "ccc", 20, 39
+	transmit
+
+	ccc_Row = 9
+	Do	'looking for ccc so it will look at more than ccc 01		
+		EMReadScreen end_of_data_check, 11, ccc_Row, 32
+		IF end_of_data_check = "End of Data" THEN
+			EMReadScreen CCC_amount, 9, ccc_Row + 1, 36
+			CCC_amount = Trim(CCC_amount)
+			EXIT DO
+		Else
+			ccc_Row = ccc_Row + 1
+		END IF 
+	Loop until ccc_Row = 19
+		
+
+		CALL navigate_to_PRISM_screen ("NCOL")
+		EMWritescreen "cmi", 20, 39
+		transmit
+
+		cmi_Row = 9
+		Do	'looking for cmi so it will look at more than cmi 01
+			EMReadScreen end_of_data_check, 11, cmi_Row, 32
+			IF end_of_data_check = "End of Data" THEN
+				EMReadScreen medical_amount, 9, cmi_Row + 1, 36
+				medical_amount = Trim(medical_amount)
+				EXIT DO
+			Else
+				cmi_Row = cmi_Row + 1
+			END IF 
+		Loop until cmi_Row = 19	
+		
+
+			CALL navigate_to_PRISM_screen ("NCOL")
+			EMWritescreen "cms", 20, 39
+			transmit
+
+			cmi_Row = 9
+			Do	'looking for cms so it will look at more than cmi 01
+				EMReadScreen end_of_data_check, 11, cms_Row, 32
+				IF end_of_data_check = "End of Data" THEN
+					EMReadScreen medical_amount, 9, cms_Row + 1, 36
+					medical_amount = Trim(medical_amount)
+					EXIT DO
+				Else
+					cms_Row = cms_Row + 1
+				END IF 
+			Loop until cms_Row = 19		
+'CUSTOM FUNCTIONS***************************************************************************************************************
+
+' This is a custom function to change the format of a participant name.  The parameter is a string with the 
+' client's name formatted like "Levesseur, Wendy K", and will change it to "Wendy K LeVesseur".  
+
+'FUNCTION change_client_name_to_FML(client_name)
+'	client_name = trim(client_name)
+'	length = len(client_name)
+'	position = InStr(client_name, ", ")
+'	last_name = Left(client_name, position-1)
+'	first_name = Right(client_name, length-position-1)	
+'	client_name = first_name & " " & last_name
+'	client_name = lcase(client_name)
+'	call fix_case(client_name, 1)
+'	change_client_name_to_FML = client_name 'To make this a return function, this statement must set the value of the function name
+'END FUNCTION
+
+'This is a custom function to fix data that we are reading from PRISM that includes underscores.  The parameter is a string for the 
+'variable to be searched.  The function searches the variable and removes underscores.  Then, the fix case function is called to format
+'the string in the correct case.  Finally, the data is trimmed to remove any excess spaces.	
+'FUNCTION fix_read_data (search_string) 
+'	search_string = replace(search_string, "_", "")
+'	call fix_case(search_string, 1)
+'	search_string = trim(search_string)
+'	fix_read_data = search_string 'To make this a return function, this statement must set the value of the function name
+'END FUNCTION
+
+'END CUSTOM FUNCTIONS-------------------------------------------------------
+
+'DIM NCP_MCI, NCP_F, NCP_M, NCP_L, NCP_name
+'NCP Name
+call navigate_to_PRISM_screen("NCDE")
+EMWriteScreen NCP_MCI, 4, 7
+EMReadScreen NCP_F, 12, 8, 34
+EMReadScreen NCP_M, 12, 8, 56
+EMReadScreen NCP_L, 17, 8, 8
+
+NCP_name = fix_read_data(NCP_F) & " " & fix_read_data(NCP_M) & " " & fix_read_data(NCP_L)	
+NCP_name = trim(NCP_name)
+
+
+'FINDING TOTAL ARREARS FOR DL AGREEMENT and making it into a number with 2 decimal points
+'FINDING CURRENT SUPPORT
+'***********want monthly to be mo accrual plus month non accural and auto fill in dialog
+'DIM total_arrears, Month_Accrual, Month_NonAccrual, Monthly, arrears_collection
+
+
+CALL navigate_to_PRISM_screen("CAFS")
+EMReadScreen total_arrears, 10, 12, 68
+total_arrears = Trim(total_arrears)
+
+EMReadScreen Month_Accrual, 8, 9, 31
+EMReadScreen Month_NonAccrual, 8, 10, 31
+Month_Accrual = Trim(Month_Accrual)
+Month_NonAccrual = Trim(Month_NonAccrual)
+
+'making sure script read numbers as number not strings
+Monthly = Monthly * 1
+Month_Accrual = Month_Accrual * 1
+Month_NonAccrual = Month_NonAccrual * 1
+total_arrears = total_arrears * 1
+
+'calculating monthly collection to put in dialog and caad and cawt
+IF total_arrears = 0 THEN Monthly = Month_Accrual + Month_NonAccrual  
+IF total_arrears >= Month_Accrual AND Month_NonAccrual = 0  THEN Monthly = (Month_Accrual + Month_NonAccrual) * 1.2
+IF total_arrears >= Month_Accrual AND Month_NonAccrual > 0  THEN Monthly = (Month_Accrual + Month_NonAccrual)
+IF total_arrears > Month_NonAccrual AND Month_Accrual = 0 THEN Monthly = Month_NonAccrual * 1.2
+IF total_arrears < Month_Accrual AND total_arrears <> 0 AND Month_NonAccrual = 0 THEN Monthly = Month_Accrual
+IF total_arrears < Month_Accrual AND total_arrears <> 0 AND Month_NonAccrual > 0  THEN Monthly = (Month_Accrual + Month_NonAccrual) 
+
+Monthly = trim(Monthly)
+
+'formating to currency with $
+Monthly = FormatNumber(Monthly, 2)
+Month_Accrual = FormatNumber(Month_Accrual,2)
+Month_NonAccrual = FormatNumber(Month_NonAccrual,2)
+total_arrears = FormatNumber(total_arrears, 2)
+
+'calculating arrears collection of 20%
+IF Month_NonAccrual = 0 THEN arrears_collection = Month_Accrual * .2
+'calculating arrears collection not 20% but monthly non accrual amount
+IF Month_NonAccrual > 0 THEN arrears_collection = Month_NonAccrual 
+
+arrears_collection = FormatNumber(arrears_collection,2)
+
+'Getting worker info for word documents
+EMSetCursor 5, 53
+PF1
+EMReadScreen worker_name, 27, 6, 50
+EMReadScreen worker_phone, 12, 8, 35
+PF3
+
+'Cleaning up worker info
+worker_name = trim(worker_name)
+call fix_case(worker_name, 1)
+worker_name = change_client_name_to_FML(worker_name)
+
+'NCP Address
+'Navigating to NCDD to pull address info
+call navigate_to_PRISM_screen("NCDD")
+EMReadScreen ncp_street_line_1, 30, 15, 11
+EMReadScreen ncp_street_line_2, 30, 16, 11
+EMReadScreen ncp_city_state_zip, 49, 17, 11
+
+'Cleaning up address info
+ncp_street_line_1 = replace(ncp_street_line_1, "_", "")
+call fix_case(ncp_street_line_1, 1)
+ncp_street_line_2 = replace(ncp_street_line_2, "_", "")
+call fix_case(ncp_street_line_2, 1)
+if trim (ncp_street_line_2) <> "" then
+	ncp_address = ncp_street_line_1 & chr(13) & ncp_street_line_2
+else
+	ncp_address = ncp_street_line_1
+end if
+ncp_city_state_zip = replace(replace(replace(ncp_city_state_zip, "_", ""), "    St: ", ", "), "    Zip: ", " ")
+call fix_case(ncp_city_state_zip, 2)
+
+'------------DORD DL AGREEMENT
+
+IF dordagreement_checkbox = 1 THEN
+'***************************************
+'DIM Dord_Dialog, start_date
+
+'dialog for user labels for dord dl agreement
+BeginDialog Dord_Dialog, 0, 0, 206, 155, "Options for DORD DL Agreement"
+  EditBox 70, 25, 50, 15, Month_Accrual
+  EditBox 70, 50, 50, 15, total_arrears
+  EditBox 135, 75, 50, 15, Monthly
+  EditBox 100, 100, 50, 15, start_date
+  ButtonGroup ButtonPressed
+    OkButton 95, 130, 50, 15
+    CancelButton 150, 130, 50, 15
+  Text 40, 5, 80, 10, "User Lables for F0701"
+  Text 10, 30, 60, 10, "Current Support"
+  Text 10, 55, 60, 10, "Arrears Balance"
+  Text 10, 80, 120, 10, "Total Amount of Payment Agreement"
+  Text 10, 105, 85, 10, "Start date of agreement"
+EndDialog
+
+Do
+	err_msg = ""
+	Dialog Dord_Dialog 'Shows name of dialog
+		IF buttonpressed = 0 then stopscript		'Cancel
+		IF start_date = "" THEN err_msg = vbNewline & "You must enter start date for DL Agreement."
+		IF Month_Accraul = "" THEN err_msg = vbNewline & "You must enter lump sum amount or $0 if no lump sum."
+		IF total_arrears = "" THEN err_msg = vbNewline & "You must enter start date for graduated amount."
+		IF Monthly = "" THEN err_msg = vbNewline & "You must enter graduated amount."
+		IF err_msg <> "" THEN 
+			MsgBox "***NOTICE!!!***" & vbNewline & err_msg & vbNewline & vbNewline & "Please resolve for the script to continue."
+		END IF
+
+LOOP UNTIL err_msg = ""
+
+
+'----------------------------------
+
+'dord to create doc f0701
+	CALL navigate_to_PRISM_screen("DORD")
+	EMWriteScreen "C", 3, 29
+	transmit
+	EMWriteScreen "A", 3, 29
+	EMWriteScreen "F0701", 6, 36
+	transmit
+
+	'shift f2, to get to user lables 
+	PF14
+	EMWriteScreen "u", 20,14
+	transmit
+ 	EMSetCursor 7, 5
+	EMWriteScreen "S", 7, 5
+	EMWriteScreen "S", 8, 5
+	EMWriteScreen "S", 9, 5
+	EMWriteScreen "S", 10, 5
+	EMWriteScreen "S", 11, 5
+	EMWriteScreen "S", 12, 5
+	EMWriteScreen "S", 13, 5
+	transmit
+
+	EMWriteScreen ("x"), 16, 15
+	transmit
+	EMWriteScreen Month_Accrual, 16, 15
+	transmit
+	EMWriteScreen ("x"), 16, 15
+	transmit
+	EMWriteScreen total_arrears, 16, 15
+	transmit
+	EMWriteScreen Monthly, 16, 15
+	transmit
+	EMWriteScreen ("1st"), 16, 15
+	transmit
+	EMWriteScreen start_date, 16, 15
+	transmit
+	PF3
+	EMWriteScreen "M", 3, 29
+	transmit
+
+	'''need to select enforcment type DLS
+MsgBox "IMPORTANT!!  IMPORTANT!!" & vbNewline & vbNewline & "Select the correct Enforcement Rememdy DLS and press enter, " & vbNewline & "then PRESS OK so script can continue.", vbSystemModal, "Select Correct DLS"
+
+END IF
+'end dord dl agreement
+
+'DIM Word_Info_dialog, arrears_date
+'dialog for info needed on word dl agreements not pulled from prism
+IF agreement_approval_checkbox = checked OR agreement_checkbox = checked THEN 
+
+	BeginDialog Word_Info_dialog, 0, 0, 201, 75, "Word Doc Info Needed"
+  		EditBox 125, 5, 65, 15, arrears_date
+ 		EditBox 110, 25, 70, 15, start_date
+  		ButtonGroup ButtonPressed
+    	        OkButton 90, 55, 50, 15
+    		  CancelButton 145, 55, 50, 15
+  		Text 15, 10, 105, 10, "Date arrears balance is through"
+  		Text 15, 30, 90, 10, "Start date of DL Agreement"
+	EndDialog
+
+Do
+	err_msg = ""
+	Dialog Word_Info_dialog 'Shows name of dialog
+		IF buttonpressed = 0 then stopscript		'Cancel
+		IF arrears_date = "" THEN err_msg = vbNewline & "You must enter date arrears balance is through."
+		IF start_date = "" THEN err_msg = vbNewline & "You must enter start date for DL Agreement."
+		IF err_msg <> "" THEN 
+			MsgBox "***NOTICE!!!***" & vbNewline & err_msg & vbNewline & vbNewline & "Please resolve for the script to continue."
+		END IF
+
+LOOP UNTIL err_msg = ""
+'end dialog
+END if
+
+'---------------------------
+
+'DIM lump_sum, graduated_date, graduated_amount, Graduated_dialog
+
+
+
+'dialog for graduated dl agreement for word
+IF graduated_approval_checkbox = checked OR arrears_approval_checkbox = checked THEN
+
+	BeginDialog Graduated_dialog, 0, 0, 201, 140, "Word Doc Info Needed"
+ 		EditBox 125, 5, 65, 15, arrears_date
+ 	 	EditBox 105, 25, 70, 15, start_date
+  		EditBox 85, 45, 60, 15, lump_sum
+  		EditBox 90, 65, 70, 15, graduated_date
+  		EditBox 85, 85, 60, 15, graduated_amount
+  		ButtonGroup ButtonPressed
+    		  OkButton 90, 120, 50, 15
+    		  CancelButton 145, 120, 50, 15
+  		Text 15, 10, 105, 10, "Date arrears balance is through"
+  		Text 15, 30, 90, 10, "Start date for Full Amount"
+  		Text 15, 50, 65, 10, "Lump Sum Amount"
+  		Text 15, 70, 70, 10, "Graduated Start Date"
+ 	 	Text 15, 90, 65, 10, "Graduated Amount"
+	EndDialog
+
+Do
+	err_msg = ""
+	Dialog Graduated_dialog 'Shows name of dialog
+		IF buttonpressed = 0 THEN stopscript		'Cancel
+		IF arrears_date = "" THEN err_msg = vbNewline & "You must enter date arrears balance is through."
+		IF start_date = "" THEN err_msg = vbNewline & "You must enter start date for DL Agreement."
+		IF lump_sum = "" THEN err_msg = vbNewline & "You must enter lump sum amount or $0 if no lump sum."
+		'IF graduated_date = "" THEN err_msg = vbNewline & "You must enter start date for graduated amount."
+		IF graduated_amount = "" THEN err_msg = vbNewline & "You must enter graduated amount or $0 if not doing a graduated payment plan."
+		IF err_msg <> "" THEN 
+			MsgBox "***NOTICE!!!***" & vbNewline & err_msg & vbNewline & vbNewline & "Please resolve for the script to continue."
+		END IF
+
+LOOP UNTIL err_msg = ""
+'end dialog
+END if
+'-------------------------end graduated dialog
+
+'dialog for lump sum
+'DIM Lump_Sum_dialog
+IF agreement_approval_lumpsum_checkbox = checked THEN
+
+	BeginDialog Lump_Sum_dialog, 0, 0, 201, 105, "Word Doc Info Needed"
+  		EditBox 125, 5, 65, 15, arrears_date
+  		EditBox 110, 25, 70, 15, start_date
+  		EditBox 85, 45, 60, 15, lump_sum
+  		ButtonGroup ButtonPressed
+   		  OkButton 90, 80, 50, 15
+    		  CancelButton 145, 80, 50, 15
+  		Text 15, 10, 105, 10, "Date arrears balance is through"
+  		Text 15, 30, 90, 10, "Start date of DL Agreement"
+  		Text 15, 50, 65, 10, "Lump Sum Amount"
+	EndDialog
+
+Do
+	err_msg = ""
+	Dialog Lump_Sum_dialog 'Shows name of dialog
+		IF buttonpressed = 0 then stopscript		'Cancel
+		IF arrears_date = "" THEN err_msg = vbNewline & "You must enter date arrears balance is through."
+		IF start_date = "" THEN err_msg = vbNewline & "You must enter start date for DL Agreement."
+		IF lump_sum = "" THEN err_msg = vbNewline & "You must enter lump sum amount or $0 if no lump sum."
+		IF err_msg <> "" THEN 
+			MsgBox "***NOTICE!!!***" & vbNewline & err_msg & vbNewline & vbNewline & "Please resolve for the script to continue."
+		END IF
+
+LOOP UNTIL err_msg = ""
+'end dialog
+END if
+
+
+'----------------------end lump sum dialog
+
+
+'DIM word_doc_open, objWord, objDoc, objSelection
+
+'creating the work application object (if any of the Word docs are selected and making it visible)
+If _
+	agreement_checkbox = checked or _
+	agreement_approval_checkbox = checked or _
+	graduated_approval_checkbox = checked or _
+	dordagreement_checkbox = checked or _
+	preapproved_checklist_button or _
+	agreement_approval_lumpsum_checkbox or _
+	dl_offer_letter_checkbox or _
+	arrears_approval_checkbox = checked THEN
+		Set objWord = CreateObject("Word.Application")
+		objWord.Visible = True
+End If
+
+'prapproved checklist word doc in dl dialog
+
+IF ButtonPressed = preapproved_checklist_button THEN set objDoc = objWord.Documents.Add("G:\Scripts CS\Word Docs\Active\CHECKLIST FOR PREAPPROVED DRIVER.dotx")	'Opens the specific Word doc 
+	'With objDoc
+	'END WITH
+'END IF
+'---------DL imortant notice and agreements if using dord dl agreement
+
+IF dordagreement_checkbox = 1 THEN
+ 	set objDoc = objWord.Documents.Add("G:\Scripts CS\Word Docs\Active\DL IMPORTANT NOTICES AND AGREEMENTS.dotx")	'Opens the specific Word doc 
+END IF
+
+
+'---dl offer letter
+IF dl_offer_letter_checkbox = 1 THEN
+	set objDoc = objWord.Documents.Add("G:\Scripts CS\Word Docs\Active\payment agreement offer letter script2.dotx")	'Opens the specific Word doc 
+	With objDoc
+		.Formfields ("PRISM_case_number").Result = PRISM_case_number
+		.Formfields ("client_name").Result = NCP_name
+		.Formfields ("client_name2").Result = NCP_name
+		.Formfields ("address_1").Result = ncp_address
+		.Formfields ("address_2").Result = ncp_city_state_zip
+		'.Formfields ("suspension_date").Result = suspension_date
+		.Formfields ("worker_name").Result = worker_name 
+		.Formfields ("worker_phone").Result = worker_phone
+ 	END WITH
+END IF
+
+'---------PREAPPROVED REGULAR WORD DOC
+IF agreement_checkbox = 1 THEN
+	set objDoc = objWord.Documents.Add("G:\Scripts CS\Word Docs\In Progress\Script Payment plan - pre-approved.dotx")	'Opens the specific Word doc 
+	With objDoc
+		.Formfields ("court_file").Result = court_file
+		.Formfields ("PRISM_case_number").Result = PRISM_case_number
+		.Formfields ("client_name").Result = NCP_name
+		.Formfields ("arrears_date").Result = arrears_date
+		.Formfields ("total_arrears").Result = total_arrears
+		.Formfields ("basic").Result = CCH_amount
+		.Formfields ("childcare").Result = CCC_amount
+		.Formfields ("medical").Result = medical_amount  
+		.Formfields ("arrears_collection").Result = arrears_collection
+		.Formfields ("Monthly").Result = Monthly
+		.Formfields ("start_date").Result = start_date
+ 	END WITH
+END IF
+
+	
+
+'---------Approval NEEDED REGULAR WORD DOC---no lump sum
+IF agreement_approval_checkbox = 1 THEN
+	set objDoc = objWord.Documents.Add("G:\Scripts CS\Word Docs\In Progress\Script Payment plan - need approval no lump sum.dotx")	'Opens the specific Word doc 
+	With objDoc
+		.Formfields ("court_file").Result = court_file
+		.Formfields ("PRISM_case_number").Result = PRISM_case_number
+		.Formfields ("client_name").Result = NCP_name
+		.Formfields ("arrears_date").Result = arrears_date
+		.Formfields ("total_arrears").Result = total_arrears
+		.Formfields ("basic").Result = CCH_amount
+		.Formfields ("childcare").Result = CCC_amount
+		.Formfields ("medical").Result = medical_amount  
+		.Formfields ("arrears_collection").Result = arrears_collection
+		.Formfields ("Monthly").Result = Monthly
+		.Formfields ("start_date").Result = start_date
+ 	END WITH
+END IF
+
+'---------Approval NEEDED REGULAR WORD DOC---WITH lump sum
+IF agreement_approval_lumpsum_checkbox = 1 THEN
+	set objDoc = objWord.Documents.Add("G:\Scripts CS\Word Docs\In Progress\Script Payment plan - need approval with lump sum.dotx")	'Opens the specific Word doc 
+	With objDoc
+		.Formfields ("court_file").Result = court_file
+		.Formfields ("case_number").Result = PRISM_case_number
+		.Formfields ("client_name").Result = NCP_name
+		.Formfields ("arrears_date").Result = arrears_date
+		.Formfields ("total_arrears").Result = total_arrears
+		.Formfields ("basic").Result = CCH_amount
+		.Formfields ("childcare").Result = CCC_amount
+		.Formfields ("medical").Result = medical_amount  
+		.Formfields ("arrears_collection").Result = arrears_collection
+		.Formfields ("Monthly").Result = Monthly
+		.Formfields ("lump_sum").Result = lump_sum
+		.Formfields ("start_date").Result = start_date
+ 	END WITH
+END IF
+
+
+'---------Approval NEEDED GRADUATED WORD DOC
+IF graduated_approval_checkbox = 1 THEN
+	set objDoc = objWord.Documents.Add("G:\Scripts CS\Word Docs\In Progress\Script Payment plan - need approval graduated.dotx")	'Opens the specific Word doc 
+	With objDoc
+		.Formfields ("court_file").Result = court_file
+		.Formfields ("PRISM_case_number").Result = PRISM_case_number
+		.Formfields ("client_name").Result = NCP_name
+		.Formfields ("arrears_date").Result = arrears_date
+		.Formfields ("total_arrears").Result = total_arrears
+		.Formfields ("Monthly").Result = Monthly
+		.Formfields ("lump_sum").Result = lump_sum
+		.Formfields ("graduated_amount").Result = graduated_amount
+		.Formfields ("graduated_date").Result = graduated_date
+		.Formfields ("Monthly2").Result = Monthly
+		.Formfields ("start_date").Result = start_date
+ 	END WITH
+END IF
+
+'---------Approval NEEDED ARREARS WORD DOC
+IF arrears_approval_checkbox = 1 THEN
+	set objDoc = objWord.Documents.Add("G:\Scripts CS\Word Docs\In Progress\Script Payment plan - need approval arrears.dotx")	'Opens the specific Word doc 
+	With objDoc
+		.Formfields ("court_file").Result = court_file
+		.Formfields ("case_number").Result = PRISM_case_number
+		.Formfields ("client_name").Result = NCP_name
+		.Formfields ("Monthly").Result = Monthly
+		.Formfields ("arrears_date").Result = arrears_date
+		.Formfields ("total_arrears").Result = total_arrears
+		.Formfields ("lump_sum").Result = lump_sum
+		.Formfields ("graduated_amount").Result = graduated_amount
+		.Formfields ("graduated_date").Result = graduated_date
+		.Formfields ("Monthly2").Result = Monthly
+		.Formfields ("start_date").Result = start_date
+ 	END WITH
+END IF
+
+'end of all word docs needed for this script
+
+
+'reminder to print and mail documents
+IF agreement_approval_checkbox = checked OR agreement_checkbox = checked OR graduated_approval_checkbox = checked OR arrears_approval_checkbox = checked OR agreement_approval_lumpsum_checkbox = checked THEN MsgBox ( "IMPORTANT!!  IMPORTANT!!" & vbNewline & vbNewline & "REMEMBER TO PRINT and MAIL WORD DOCUMENTS! " )
+
+IF dordagreement_checkbox = 1 THEN MsgBox ( "IMPORTANT!!  IMPORTANT!!" & vbNewline & vbNewline & "REMEMBER TO PRINT and MAIL Important Notices and Agreements and Dispose of Your Privacy Rights! ")  
+
+IF ButtonPressed = preapproved_checklist_button THEN set objDoc = objWord.Documents.Add("G:\Scripts CS\Word Docs\Active\CHECKLIST FOR PREAPPROVED DRIVER.dotx")	'Opens the specific Word doc 
+	With objDoc
+	END WITH
+
+
+script_end_procedure("")
+
